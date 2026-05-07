@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>にほんごクイズ - おんせいれんしゅう</title>
+    <style>
+        body { 
+            font-family: 'Helvetica Neue', Arial, sans-serif; 
+            text-align: center; 
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            padding: 20px; 
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            max-width: 550px;
+            margin: 0 auto;
+        }
+        h2 {
+            color: #ff6b6b;
+            font-size: 32px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(255,255,255,0.5);
+        }
+        .card { 
+            background: white; 
+            border-radius: 25px; 
+            padding: 35px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
+            margin-bottom: 20px;
+        }
+        .score-board {
+            background: rgba(255,255,255,0.9);
+            color: #ff6b6b;
+            padding: 15px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .emoji-image {
+            font-size: 180px;
+            margin: 20px 0;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        #hint {
+            font-size: 24px;
+            color: #333;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        input { 
+            padding: 15px; 
+            font-size: 22px; 
+            border: 3px solid #ff9a9e; 
+            border-radius: 15px; 
+            width: 85%; 
+            margin-top: 15px;
+            box-sizing: border-box;
+        }
+        input:focus {
+            outline: none;
+            border-color: #ff6b6b;
+        }
+        .button-group {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button { 
+            padding: 15px 30px; 
+            font-size: 20px; 
+            background-color: #ff9a9e; 
+            color: white; 
+            border: none; 
+            border-radius: 15px; 
+            cursor: pointer; 
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        button:hover { 
+            background-color: #ff6b6b; 
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(255,107,107,0.3);
+        }
+        .audio-btn {
+            background-color: #4ecdc4;
+            font-size: 28px;
+            padding: 20px;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px;
+        }
+        .audio-btn:hover {
+            background-color: #45b7aa;
+        }
+        .repeat-btn {
+            background-color: #a29bfe;
+        }
+        .repeat-btn:hover {
+            background-color: #6c5ce7;
+        }
+        #message { 
+            margin-top: 20px; 
+            font-weight: bold; 
+            font-size: 24px; 
+            min-height: 40px;
+            padding: 15px;
+            border-radius: 15px;
+        }
+        .progress {
+            color: #666;
+            font-size: 18px;
+            margin-top: 15px;
+        }
+        .instruction {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            color: #856404;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>🎌 にほんごクイズ</h2>
+        
+        <div class="instruction">
+            🔊ボタンをおして、おんせいをきいてね！<br>
+            そして、ひらがなでこたえてね！
+        </div>
+
+        <div class="score-board">
+            スコア: <span id="score">0</span> / <span id="total">0</span> 
+            | せいかいりつ: <span id="accuracy">0</span>%
+        </div>
+
+        <div class="card">
+            <div class="emoji-image" id="quiz-image">🍵</div>
+            
+            <button class="audio-btn" onclick="playAudio()" title="おんせいをきく">🔊</button>
+            
+            <p id="hint">これはなんですか？</p>
+            <p class="progress">もんだい <span id="current">1</span> / <span id="total-questions">20</span></p>
+            
+            <input type="text" id="answer-input" placeholder="ひらがなでにゅうりょくしてね" onkeypress="handleEnter(event)">
+            
+            <div class="button-group">
+                <button onclick="checkAnswer()">チェック！✓</button>
+                <button class="repeat-btn" onclick="playAudio()">もういちど 🔁</button>
+                <button onclick="skipQuestion()" style="background-color: #ffa502;">スキップ ⏭</button>
+            </div>
+            
+            <div id="message"></div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            { emoji: "🍵", answer: "おちゃ", hint: "のみもの", english: "Green Tea" },
+            { emoji: "🐟", answer: "さかな", hint: "うみのいきもの", english: "Fish" },
+            { emoji: "🏠", answer: "いえ", hint: "すむところ", english: "House" },
+            { emoji: "❄️", answer: "さむい", hint: "ふゆのきもち", english: "Cold" },
+            { emoji: "💧", answer: "みず", hint: "のみもの", english: "Water" },
+            { emoji: "📖", answer: "ほん", hint: "よむもの", english: "Book" },
+            { emoji: "🐕", answer: "いぬ", hint: "ペット", english: "Dog" },
+            { emoji: "🐱", answer: "ねこ", hint: "ペット", english: "Cat" },
+            { emoji: "🚗", answer: "くるま", hint: "のりもの", english: "Car" },
+            { emoji: "🌳", answer: "き", hint: "しぜん", english: "Tree" },
+            { emoji: "🌸", answer: "はな", hint: "きれいなもの", english: "Flower" },
+            { emoji: "⛰️", answer: "やま", hint: "たかいところ", english: "Mountain" },
+            { emoji: "🌧️", answer: "あめ", hint: "てんき", english: "Rain" },
+            { emoji: "☀️", answer: "たいよう", hint: "そらにあるもの", english: "Sun" },
+            { emoji: "🌙", answer: "つき", hint: "よるにみえるもの", english: "Moon" },
+            { emoji: "🍚", answer: "ごはん", hint: "たべもの", english: "Rice" },
+            { emoji: "🍞", answer: "ぱん", hint: "たべもの", english: "Bread" },
+            { emoji: "🍎", answer: "りんご", hint: "くだもの", english: "Apple" },
+            { emoji: "🏫", answer: "がっこう", hint: "べんきょうするところ", english: "School" },
+            { emoji: "👫", answer: "ともだち", hint: "いっしょにあそぶひと", english: "Friend" },
+            { emoji: "🌞", answer: "あつい", hint: "なつのきもち", english: "Hot" },
+            { emoji: "🍜", answer: "らーめん", hint: "たべもの", english: "Ramen" },
+            { emoji: "🚃", answer: "でんしゃ", hint: "のりもの", english: "Train" },
+            { emoji: "✏️", answer: "えんぴつ", hint: "かくもの", english: "Pencil" },
+            { emoji: "👨‍👩‍👧‍👦", answer: "かぞく", hint: "おとうさん、おかあさん", english: "Family" }
+        ];
+
+        let currentIndex = 0;
+        let score = 0;
+        let totalAttempts = 0;
+
+        function playAudio() {
+            const currentWord = quizData[currentIndex].answer;
+            const utterance = new SpeechSynthesisUtterance(currentWord);
+            utterance.lang = 'ja-JP';
+            utterance.rate = 0.7; // ゆっくり
+            utterance.pitch = 1.1; // すこしたかく
+            speechSynthesis.cancel(); // まえのおんせいをとめる
+            speechSynthesis.speak(utterance);
+            
+            // ボタンアニメーション
+            const btn = event ? event.target : document.querySelector('.audio-btn');
+            btn.style.transform = 'scale(1.2)';
+            setTimeout(() => btn.style.transform = 'scale(1)', 300);
+        }
+
+        function checkAnswer() {
+            const input = document.getElementById('answer-input').value.trim();
+            const message = document.getElementById('message');
+            totalAttempts++;
+            
+            if (input === quizData[currentIndex].answer) {
+                score++;
+                message.style.color = "green";
+                message.style.backgroundColor = "#d4edda";
+                message.innerText = "せいかい！すばらしい！✨ 🎉";
+                playSuccessSound();
+                updateScore();
+                setTimeout(nextQuiz, 2000);
+            } else if (input === "") {
+                message.style.color = "#856404";
+                message.style.backgroundColor = "#fff3cd";
+                message.innerText = "なにかかいてね！";
+                totalAttempts--; // カウントしない
+            } else {
+                message.style.color = "#721c24";
+                message.style.backgroundColor = "#f8d7da";
+                message.innerText = "おしい！もういちどチャレンジしてね！💪";
+                updateScore();
+            }
+        }
+
+        function skipQuestion() {
+            totalAttempts++;
+            const message = document.getElementById('message');
+            message.style.color = "#856404";
+            message.style.backgroundColor = "#fff3cd";
+            message.innerText = `こたえは「${quizData[currentIndex].answer}」でした！`;
+            
+            // こたえをよむ
+            playAudio();
+            
+            updateScore();
+            setTimeout(nextQuiz, 3000);
+        }
+
+        function nextQuiz() {
+            currentIndex = (currentIndex + 1) % quizData.length;
+            document.getElementById('quiz-image').innerText = quizData[currentIndex].emoji;
+            document.getElementById('hint').innerText = quizData[currentIndex].hint;
+            document.getElementById('answer-input').value = "";
+            document.getElementById('message').innerText = "";
+            document.getElementById('message').style.backgroundColor = "transparent";
+            document.getElementById('current').innerText = currentIndex + 1;
+            
+            // あたらしいもんだいのおんせいをじどうさいせい
+            setTimeout(playAudio, 500);
+        }
+
+        function updateScore() {
+            document.getElementById('score').innerText = score;
+            document.getElementById('total').innerText = totalAttempts;
+            const accuracy = totalAttempts > 0 ? Math.round((score / totalAttempts) * 100) : 0;
+            document.getElementById('accuracy').innerText = accuracy;
+        }
+
+        function playSuccessSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        function handleEnter(event) {
+            if (event.key === 'Enter') {
+                checkAnswer();
+            }
+        }
+
+        // しょきか
+        window.onload = function() {
+            document.getElementById('total-questions').innerText = quizData.length;
+            document.getElementById('quiz-image').innerText = quizData[0].emoji;
+            document.getElementById('hint').innerText = quizData[0].hint;
+            
+            // さいしょのもんだいのおんせいをさいせい
+            setTimeout(playAudio, 1000);
+        };
+    </script>
+</body>
+</html>
